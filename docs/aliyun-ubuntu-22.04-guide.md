@@ -102,12 +102,20 @@ OPENAI_MODEL=your-model-name
 AI_TIMEOUT_SECONDS=30
 ```
 
+If the Alibaba Cloud Docker accelerator cannot pull the Python official image,
+add this non-secret build setting to the same file:
+
+```
+PYTHON_BASE_IMAGE=m.daocloud.io/docker.io/library/python:3.12-slim
+```
+
 Start the source build and container:
 
 ```bash
 cd /opt/rennebot/app
 BOT_ENV_FILE=/opt/rennebot/runtime/bot.env RUNTIME_DIR=/opt/rennebot/runtime \
-  docker compose -f compose.rennebot.yml up -d --build
+  docker compose --env-file /opt/rennebot/runtime/bot.env \
+  -f compose.rennebot.yml up -d --build
 ```
 
 The first build can take several minutes. Check it with:
