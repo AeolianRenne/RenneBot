@@ -34,6 +34,20 @@ class CommandError(ValueError):
 
 
 _NUMBER = re.compile(r"^\d{1,64}$")
+_CONFIG_KEYS = {
+    "ai-users": "ai_private_user_ids",
+    "ai-groups": "ai_group_ids",
+    "admins": "admin_user_ids",
+}
+
+
+@dataclass(frozen=True)
+class RuntimeConfigCommand:
+    """A private administrator configuration command."""
+
+    action: str
+    setting_key: str | None = None
+    values: tuple[str, ...] = ()
 
 
 def parse_group_command(message: str) -> ParsedCommand | None:
@@ -93,3 +107,30 @@ def parse_group_command(message: str) -> ParsedCommand | None:
             target_user_id=parts[1] if len(parts) == 2 else None,
         )
     return None
+
+
+def parse_runtime_config_command(message: str) -> RuntimeConfigCommand | None:
+    """Parse a private administrator configuration command.
+
+    Args:
+        message: Private plain text message.
+
+    Returns:
+        Parsed configuration command, or None when not a configuration command.
+
+    Raises:
+        CommandError: If the configuration command is malformed.
+    """
+    parts = message.strip().split(maxsplit=3)
+    if not parts or parts[0] != "/renne-config":
+        return None
+    if len(parts) == 2 and parts[1] == "show":
+        return RuntimeConfigCommand("show")
+    if len(parts) != 4 or parts[2] != "set" or parts[1] not in _CONFIG_KEYS:
+        raise CommandError(
+            "Usage: /renne-config show | /renne-config <ai-users|ai-groups|admins> set <id,id>"
+        )
+    values = tuple(item.strip() for item in parts[3].split(",") if item.strip())
+    if not values or any(any(character.isspace() for character in item) for item in values):
+        raise CommandError("Configuration IDs must be a non-empty comma-separated list.")
+    return RuntimeConfigCommand("set", _CONFIG_KEYS[parts[1]], values)

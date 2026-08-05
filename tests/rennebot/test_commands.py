@@ -4,6 +4,7 @@ from rennebot_plugin.qq_game_registry.commands import (
     CommandError,
     CommandKind,
     parse_group_command,
+    parse_runtime_config_command,
 )
 
 
@@ -44,6 +45,14 @@ def test_parses_identity_command() -> None:
 
     assert command is not None
     assert command.kind == CommandKind.IDENTITY
+
+
+def test_parses_runtime_configuration() -> None:
+    command = parse_runtime_config_command("/renne-config ai-users set id-1,id-2")
+
+    assert command is not None
+    assert command.setting_key == "ai_private_user_ids"
+    assert command.values == ("id-1", "id-2")
 
 
 def test_non_command_is_ignored() -> None:

@@ -26,10 +26,10 @@ chat disabled because RenneBot handles the allowed AI calls itself.
 
 The plugin intercepts QQ Official messages before AstrBot's normal LLM flow.
 
-- A private text message invokes AI only when its sender ID is listed in
-  `AI_PRIVATE_USER_IDS`.
-- A group request must be `@机器人 /ai <问题>` and its group ID must be in
-  `AI_GROUP_IDS`.
+- A private text message invokes AI only when its sender ID is stored in the
+  SQLite runtime configuration.
+- A group request must be `@机器人 /ai <问题>` and its group ID must be stored
+  in the SQLite runtime configuration.
 - All groups where the bot is present can use the non-AI commands below:
   - `@机器人 /记录游戏id <游戏名> <数字ID>`
   - `@机器人 /查询群友id <游戏名>`
@@ -37,17 +37,55 @@ The plugin intercepts QQ Official messages before AstrBot's normal LLM flow.
 - A member may delete only their own record. IDs in `BOT_ADMIN_USER_IDS` may
   delete another member's record by supplying that member's QQ ID.
 
-Use `/renne-id` to obtain the platform IDs for the comma-separated allowlists:
-send it in a private chat to see your user ID, or send `@机器人 /renne-id` in a
-group to see the group and sender IDs. Every AI request is one-shot and no
-conversation history is written by this plugin.
+Use `/renne-id` to obtain platform IDs: send it in a private chat to see your
+user ID, or send `@机器人 /renne-id` in a group to see the group and sender IDs.
+On the first startup only, set `RENNEBOT_BOOTSTRAP_ADMIN_IDS` as a one-time
+runtime environment variable. It initializes the SQLite administrator list;
+then recreate the service without that variable. An administrator privately
+manages all allowlists with:
+
+```text
+/renne-config show
+/renne-config ai-users set <id,id>
+/renne-config ai-groups set <id,id>
+/renne-config admins set <id,id>
+```
+
+Every AI request is one-shot and no conversation history is written by this
+plugin.
+
+## External runtime configuration recovery
+
+The plugin settings are ordinary JSON values in SQLite table `plugin_settings`.
+They can be recovered or changed without a QQ administrator account. Stop the
+container first, back up the database, then use the repository's local tool:
+
+```bash
+cd /opt/rennebot/app
+database=/opt/rennebot/runtime/astrbot-data/plugin_data/qq_game_registry/rennebot.sqlite3
+cp -a "$database" "/opt/rennebot/runtime/backups/rennebot-manual-$(date -u +%Y%m%dT%H%M%SZ).sqlite3"
+
+BOT_ENV_FILE=/opt/rennebot/runtime/bot.env RUNTIME_DIR=/opt/rennebot/runtime \
+  docker compose -f compose.rennebot.yml stop
+python3 scripts/rennebot-db.py --database "$database" set admins <new-admin-id>
+python3 scripts/rennebot-db.py --database "$database" set ai-users <id-1> <id-2>
+python3 scripts/rennebot-db.py --database "$database" set ai-groups <group-id>
+python3 scripts/rennebot-db.py --database "$database" show
+BOT_ENV_FILE=/opt/rennebot/runtime/bot.env RUNTIME_DIR=/opt/rennebot/runtime \
+  docker compose -f compose.rennebot.yml start
+```
+
+`set-json <key> <json>` can write any future plugin setting directly. This tool
+has full access to the runtime configuration; restrict filesystem and SSH access
+to trusted server administrators.
 
 ## Alibaba Cloud server
 
 Run `scripts/server-bootstrap-rennebot.sh <repository-url>` once on the Linux
 server after Docker is installed and a read-only Git deploy key is configured.
-Then edit `/opt/rennebot/runtime/bot.env` and start the Compose service as shown
-by the script.
+Then edit `/opt/rennebot/runtime/bot.env` with the OpenAI-compatible API and
+start the Compose service as shown by the script. Do not place allowlists in
+this file.
 
 Add the server's fixed public IP to the QQ Bot platform IP allowlist and grant
 the required sandbox/group/private-chat permissions. Do not open Alibaba Cloud

@@ -11,6 +11,7 @@ services:
       - ${BOT_ENV_FILE:-.env.rennebot}
     environment:
       TZ: ${TZ:-Asia/Shanghai}
+      RENNEBOT_BOOTSTRAP_ADMIN_IDS: ${RENNEBOT_BOOTSTRAP_ADMIN_IDS:-}
     ports:
       # Dashboard and callback API remain accessible only over an SSH tunnel.
       - "127.0.0.1:6185:6185"

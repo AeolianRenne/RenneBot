@@ -1,4 +1,7 @@
+import subprocess
+import sys
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 from rennebot_plugin.qq_game_registry.database import PluginDatabase
 
@@ -43,3 +46,36 @@ def test_cache_persists_and_expires(tmp_path) -> None:
 
     assert database.get_cache("example", "group", "group-a", "key") == {"enabled": True}
     assert database.get_cache("example", "group", "group-a", "expired") is None
+
+
+def test_plugin_settings_are_persisted(tmp_path) -> None:
+    database = PluginDatabase(tmp_path / "rennebot.sqlite3")
+    database.initialize()
+
+    database.set_setting("admin_user_ids", ["user-a"])
+
+    assert database.get_setting("admin_user_ids") == ["user-a"]
+    assert database.get_setting("missing", []) == []
+
+
+def test_external_database_tool_recovers_administrators(tmp_path) -> None:
+    database_path = tmp_path / "rennebot.sqlite3"
+    script = Path(__file__).parents[2] / "scripts" / "rennebot-db.py"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--database",
+            str(database_path),
+            "set",
+            "admins",
+            "recovered-admin",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "Updated admins." in result.stdout
+    assert PluginDatabase(database_path).get_setting("admin_user_ids") == ["recovered-admin"]

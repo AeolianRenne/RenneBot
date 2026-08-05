@@ -67,6 +67,11 @@ class PluginDatabase:
                     PRIMARY KEY (namespace, scope_type, scope_id, key)
                 );
                 CREATE INDEX IF NOT EXISTS idx_cache_expiry ON cache_entries (expires_at);
+                CREATE TABLE IF NOT EXISTS plugin_settings (
+                    key TEXT PRIMARY KEY,
+                    value_json TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
                 """
             )
             connection.execute(
@@ -214,6 +219,42 @@ class PluginDatabase:
                 )
                 return None
         return json.loads(row["value_json"])
+
+    def set_setting(self, key: str, value: Any) -> None:
+        """Persist a plugin-wide JSON setting.
+
+        Args:
+            key: Unique setting name.
+            value: JSON-serializable setting value.
+        """
+        with self._connection() as connection:
+            connection.execute(
+                """
+                INSERT INTO plugin_settings(key, value_json, updated_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(key) DO UPDATE SET
+                    value_json = excluded.value_json,
+                    updated_at = excluded.updated_at
+                """,
+                (key, json.dumps(value), _now()),
+            )
+
+    def get_setting(self, key: str, default: Any = None) -> Any:
+        """Read a plugin-wide JSON setting.
+
+        Args:
+            key: Unique setting name.
+            default: Value to return when the setting is absent.
+
+        Returns:
+            Stored deserialized value, or default when the setting is absent.
+        """
+        with self._connection() as connection:
+            row = connection.execute(
+                "SELECT value_json FROM plugin_settings WHERE key = ?",
+                (key,),
+            ).fetchone()
+        return json.loads(row["value_json"]) if row else default
 
     @contextmanager
     def _connection(self) -> Iterator[sqlite3.Connection]:
