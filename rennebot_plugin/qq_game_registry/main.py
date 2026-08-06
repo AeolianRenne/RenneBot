@@ -113,7 +113,7 @@ class Main(Star):
                     else None
                 )
             elif message == "/renne-id":
-                response = f"Your platform user ID: {sender_id}"
+                response = f"你的 UserID 是：{sender_id}"
             elif message.startswith("/renne-config"):
                 response = self._handle_config_message(sender_id, message)
             elif sender_id in self._setting_ids("ai_private_user_ids") and message:
@@ -159,7 +159,7 @@ class Main(Star):
         if command.kind == CommandKind.HELP:
             return self._help_text()
         if command.kind == CommandKind.IDENTITY:
-            return f"Group ID: {group_id}\nYour platform user ID: {sender_id}"
+            return f"群 ID 是：{group_id}\n你的 UserID 是：{sender_id}"
         return self._handle_registry_command(event, group_id, sender_id, command)
 
     def _handle_registry_command(
@@ -222,26 +222,32 @@ class Main(Star):
             User-facing configuration result.
         """
         if sender_id not in self._setting_ids("admin_user_ids"):
-            return "You are not a RenneBot administrator."
+            return "你还不是 RenneBot 管理员。"
         try:
             command = parse_runtime_config_command(message)
         except CommandError as error:
             return str(error)
         if command is None:
-            return "Unknown configuration command."
+            return "未知配置指令。"
         if command.action == "show":
             private_users = ", ".join(sorted(self._setting_ids("ai_private_user_ids")))
             groups = ", ".join(sorted(self._setting_ids("ai_group_ids")))
             admins = ", ".join(sorted(self._setting_ids("admin_user_ids")))
             return (
-                f"AI private users: {private_users or '(none)'}\n"
-                f"AI groups: {groups or '(none)'}\n"
-                f"Administrators: {admins or '(none)'}"
+                f"AI 私聊白名单：{private_users or '（未配置）'}\n"
+                f"AI 群聊白名单：{groups or '（未配置）'}\n"
+                f"机器人管理员：{admins or '（未配置）'}"
             )
         if command.setting_key == "admin_user_ids" and sender_id not in command.values:
-            return "Keep your own ID in the administrator list to avoid losing access."
+            return "管理员列表必须保留你自己的 ID，避免失去管理权限。"
         self.database.set_setting(command.setting_key or "", sorted(set(command.values)))
-        return f"Updated {command.setting_key} with {len(command.values)} ID(s)."
+        setting_names = {
+            "ai_private_user_ids": "AI 私聊白名单",
+            "ai_group_ids": "AI 群聊白名单",
+            "admin_user_ids": "机器人管理员",
+        }
+        setting_name = setting_names.get(command.setting_key or "", "配置")
+        return f"已更新{setting_name}，共 {len(command.values)} 个 ID。"
 
     async def _handle_private_ai_message(self, sender_id: str, message: str) -> str | None:
         """Handle an authorized user's persistent private AI conversation.

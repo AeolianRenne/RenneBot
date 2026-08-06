@@ -145,9 +145,10 @@ def parse_runtime_config_command(message: str) -> RuntimeConfigCommand | None:
         return RuntimeConfigCommand("show")
     if len(parts) != 4 or parts[2] != "set" or parts[1] not in _CONFIG_KEYS:
         raise CommandError(
-            "Usage: /renne-config show | /renne-config <ai-users|ai-groups|admins> set <id,id>"
+            "用法：/renne-config show 或 /renne-config "
+            "<ai-users|ai-groups|admins> set <id,id>"
         )
     values = tuple(item.strip() for item in parts[3].split(",") if item.strip())
     if not values or any(any(character.isspace() for character in item) for item in values):
-        raise CommandError("Configuration IDs must be a non-empty comma-separated list.")
+        raise CommandError("配置 ID 必须是非空、以英文逗号分隔的列表。")
     return RuntimeConfigCommand("set", _CONFIG_KEYS[parts[1]], values)
