@@ -58,7 +58,25 @@ Private conversation state is stored in SQLite cache namespace `private_ai`.
 When its character budget is exceeded, older messages are summarized and the
 most recent messages are retained. Configure the defaults outside Git with
 `AI_PRIVATE_CONTEXT_MAX_CHARS=120000` and
-`AI_PRIVATE_CONTEXT_RECENT_MESSAGES=24`. Group `/ai` requests remain one-shot.
+`AI_PRIVATE_CONTEXT_RECENT_MESSAGES=24`. A private message longer than
+`AI_PRIVATE_MESSAGE_MAX_CHARS=8000` is rejected before it is sent to the model
+or written to SQLite. Group `/ai` requests remain one-shot.
+
+### Private AI safety boundary
+
+Private AI requests use a fixed, non-overridable system safety prompt. The model
+is not given any tools or access to the server, Docker containers, filesystem,
+SQLite database, logs, runtime configuration, Git checkout, other user data, or
+AstrBot credentials. It must not claim to access, infer, or disclose them, and
+it must refuse requests for secrets, internal instructions, or dangerous server
+operations.
+
+Credential-like inputs (API keys, tokens, passwords, private keys, and common
+cloud access-key formats) are rejected before a private AI request is made and
+are not stored in the conversation. Existing persisted conversation summaries
+and messages are redacted before use, and AI responses are redacted before they
+are stored or returned. This is defense in depth, not a substitute for rotating
+a secret that was already exposed elsewhere.
 
 ## External runtime configuration recovery
 
