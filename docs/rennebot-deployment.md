@@ -26,8 +26,11 @@ chat disabled because RenneBot handles the allowed AI calls itself.
 
 The plugin intercepts QQ Official messages before AstrBot's normal LLM flow.
 
-- A private text message invokes AI only when its sender ID is stored in the
-  SQLite runtime configuration.
+- A private AI conversation is available only when its sender ID is stored in
+  the SQLite runtime configuration. The user sends `开启新对话` to enable it;
+  ordinary private messages then retain context. `清理上下文` clears memory
+  while keeping the conversation active, and `结束对话` returns the chat to
+  its silent state.
 - A group request must be `@机器人 /ai <问题>` and its group ID must be stored
   in the SQLite runtime configuration.
 - All groups where the bot is present can use the non-AI commands below:
@@ -51,8 +54,11 @@ manages all allowlists with:
 /renne-config admins set <id,id>
 ```
 
-Every AI request is one-shot and no conversation history is written by this
-plugin.
+Private conversation state is stored in SQLite cache namespace `private_ai`.
+When its character budget is exceeded, older messages are summarized and the
+most recent messages are retained. Configure the defaults outside Git with
+`AI_PRIVATE_CONTEXT_MAX_CHARS=120000` and
+`AI_PRIVATE_CONTEXT_RECENT_MESSAGES=24`. Group `/ai` requests remain one-shot.
 
 ## External runtime configuration recovery
 

@@ -1,4 +1,4 @@
-"""Stateless OpenAI-compatible chat requests for explicitly authorized messages."""
+"""OpenAI-compatible chat requests for explicitly authorized messages."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ class AIRequestError(RuntimeError):
 
 
 class OpenAICompatibleClient:
-    """Call an OpenAI-compatible chat-completions endpoint without conversation history."""
+    """Call an OpenAI-compatible chat-completions endpoint."""
 
     def __init__(self, transport: httpx.AsyncBaseTransport | None = None) -> None:
         """Load API configuration from the runtime environment.
@@ -43,6 +43,21 @@ class OpenAICompatibleClient:
             AIConfigurationError: If required environment variables are missing.
             AIRequestError: If the endpoint fails or returns an invalid payload.
         """
+        return await self.ask_messages([{"role": "user", "content": prompt}])
+
+    async def ask_messages(self, messages: list[dict[str, str]]) -> str:
+        """Request one response for an ordered conversation.
+
+        Args:
+            messages: OpenAI-compatible system, user, and assistant messages.
+
+        Returns:
+            Non-empty response text.
+
+        Raises:
+            AIConfigurationError: If required environment variables are missing.
+            AIRequestError: If the endpoint fails or returns an invalid payload.
+        """
         if not self.api_base or not self.api_key or not self.model:
             raise AIConfigurationError("AI 尚未配置，请联系机器人管理员。")
         try:
@@ -55,7 +70,7 @@ class OpenAICompatibleClient:
                     headers={"Authorization": f"Bearer {self.api_key}"},
                     json={
                         "model": self.model,
-                        "messages": [{"role": "user", "content": prompt}],
+                        "messages": messages,
                     },
                 )
                 response.raise_for_status()

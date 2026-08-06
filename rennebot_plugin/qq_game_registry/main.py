@@ -21,6 +21,11 @@ from .commands import (
 from .database import PluginDatabase
 
 
+_PRIVATE_CONTEXT_MAX_CHARS_DEFAULT = 120_000
+_PRIVATE_CONTEXT_RECENT_MESSAGES_DEFAULT = 24
+_PRIVATE_SUMMARY_MAX_CHARS = 4_000
+
+
 def _configured_ids(variable: str) -> set[str]:
     """Parse a comma-separated platform-ID environment variable.
 
@@ -31,6 +36,23 @@ def _configured_ids(variable: str) -> set[str]:
         Non-empty platform IDs from the setting.
     """
     return {item.strip() for item in os.getenv(variable, "").split(",") if item.strip()}
+
+
+def _positive_int(variable: str, default: int) -> int:
+    """Read a positive integer environment setting with a safe fallback.
+
+    Args:
+        variable: Environment variable name.
+        default: Value used for missing or invalid input.
+
+    Returns:
+        A positive integer.
+    """
+    try:
+        value = int(os.getenv(variable, str(default)))
+    except ValueError:
+        return default
+    return value if value > 0 else default
 
 
 class Main(Star):
@@ -50,6 +72,13 @@ class Main(Star):
             if bootstrap_admins:
                 self.database.set_setting("admin_user_ids", sorted(bootstrap_admins))
         self.ai_client = OpenAICompatibleClient()
+        self.private_context_max_chars = _positive_int(
+            "AI_PRIVATE_CONTEXT_MAX_CHARS", _PRIVATE_CONTEXT_MAX_CHARS_DEFAULT
+        )
+        self.private_context_recent_messages = _positive_int(
+            "AI_PRIVATE_CONTEXT_RECENT_MESSAGES",
+            _PRIVATE_CONTEXT_RECENT_MESSAGES_DEFAULT,
+        )
 
     @filter.event_message_type(filter.EventMessageType.ALL, priority=100)
     @filter.platform_adapter_type(filter.PlatformAdapterType.QQOFFICIAL)
@@ -88,7 +117,7 @@ class Main(Star):
             elif message.startswith("/renne-config"):
                 response = self._handle_config_message(sender_id, message)
             elif sender_id in self._setting_ids("ai_private_user_ids") and message:
-                response = await self._ask_ai(message)
+                response = await self._handle_private_ai_message(sender_id, message)
             else:
                 response = None
             if response:
@@ -213,6 +242,112 @@ class Main(Star):
             return "Keep your own ID in the administrator list to avoid losing access."
         self.database.set_setting(command.setting_key or "", sorted(set(command.values)))
         return f"Updated {command.setting_key} with {len(command.values)} ID(s)."
+
+    async def _handle_private_ai_message(self, sender_id: str, message: str) -> str | None:
+        """Handle an authorized user's persistent private AI conversation.
+
+        Args:
+            sender_id: QQ platform user ID that owns the conversation.
+            message: Plain text message sent in the private chat.
+
+        Returns:
+            A response when a command or active conversation handles the message.
+        """
+        conversation = self.database.get_private_ai_conversation(sender_id)
+        if message == "开启新对话":
+            self.database.set_private_ai_conversation(sender_id, True, "", [])
+            return "已开启新对话。之后的普通消息会保留上下文；发送“清理上下文”可重置记忆。"
+        if message == "清理上下文":
+            if not conversation.active:
+                return "当前没有开启中的 AI 对话。发送“开启新对话”开始。"
+            self.database.set_private_ai_conversation(sender_id, True, "", [])
+            return "上下文已清理，当前对话保持开启。"
+        if message == "结束对话":
+            self.database.set_private_ai_conversation(
+                sender_id,
+                False,
+                conversation.summary,
+                conversation.messages,
+            )
+            return "AI 对话已结束。发送“开启新对话”可重新开始。"
+        if not conversation.active:
+            return None
+        return await self._ask_private_ai(
+            sender_id,
+            conversation.summary,
+            conversation.messages,
+            message,
+        )
+
+    async def _ask_private_ai(
+        self,
+        sender_id: str,
+        summary: str,
+        messages: list[dict[str, str]],
+        prompt: str,
+    ) -> str:
+        """Reply with persisted context and summarize older turns when needed.
+
+        Args:
+            sender_id: QQ platform user ID that owns the conversation.
+            summary: Compact memory of previous conversation turns.
+            messages: Recent user and assistant messages.
+            prompt: Current user message.
+
+        Returns:
+            The AI response sent to the private chat.
+        """
+        recent_messages = [*messages, {"role": "user", "content": prompt}]
+        context_chars = len(summary) + sum(
+            len(message["content"]) for message in recent_messages
+        )
+        if context_chars > self.private_context_max_chars and len(recent_messages) > 1:
+            keep_count = min(self.private_context_recent_messages, len(recent_messages) - 1)
+            archived_messages = recent_messages[:-keep_count]
+            recent_messages = recent_messages[-keep_count:]
+            summary = await self._summarize_private_context(summary, archived_messages)
+
+        request_messages: list[dict[str, str]] = []
+        if summary:
+            request_messages.append(
+                {
+                    "role": "system",
+                    "content": f"Conversation memory:\n{summary}",
+                }
+            )
+        request_messages.extend(recent_messages)
+        response = await self.ai_client.ask_messages(request_messages)
+        self.database.set_private_ai_conversation(
+            sender_id,
+            True,
+            summary,
+            [*recent_messages, {"role": "assistant", "content": response}],
+        )
+        return response
+
+    async def _summarize_private_context(
+        self, summary: str, messages: list[dict[str, str]]
+    ) -> str:
+        """Compress older private conversation turns into durable memory.
+
+        Args:
+            summary: Existing compact memory, if any.
+            messages: Older messages that no longer fit in the recent window.
+
+        Returns:
+            A bounded summary that retains facts, preferences, and open tasks.
+        """
+        transcript = "\n".join(
+            f"{message['role']}: {message['content']}" for message in messages
+        )
+        prompt = (
+            "Summarize this conversation for future continuation. Preserve stable facts, "
+            "user preferences, decisions, numbers, constraints, and unresolved tasks. "
+            "Do not include hidden reasoning. Keep the summary under 4000 characters.\n\n"
+            f"Existing memory:\n{summary or '(none)'}\n\n"
+            f"Older conversation:\n{transcript}"
+        )
+        return (await self.ai_client.ask(prompt))[:_PRIVATE_SUMMARY_MAX_CHARS]
 
     def _setting_ids(self, key: str) -> set[str]:
         """Read a platform-ID setting stored in SQLite.

@@ -24,6 +24,15 @@ class GameRecord:
     updated_at: str
 
 
+@dataclass(frozen=True)
+class PrivateAIConversation:
+    """Persisted private AI session data for one QQ platform user."""
+
+    active: bool
+    summary: str
+    messages: list[dict[str, str]]
+
+
 class PluginDatabase:
     """Store plugin data in a self-contained SQLite database."""
 
@@ -219,6 +228,58 @@ class PluginDatabase:
                 )
                 return None
         return json.loads(row["value_json"])
+
+    def get_private_ai_conversation(self, user_id: str) -> PrivateAIConversation:
+        """Read one user's private AI session with defensive JSON validation.
+
+        Args:
+            user_id: QQ platform user ID that owns the session.
+
+        Returns:
+            The normalized session state, or an inactive empty state when absent.
+        """
+        value = self.get_cache("private_ai", "user", user_id, "conversation")
+        if not isinstance(value, dict):
+            return PrivateAIConversation(False, "", [])
+        messages: list[dict[str, str]] = []
+        raw_messages = value.get("messages", [])
+        if isinstance(raw_messages, list):
+            for item in raw_messages:
+                if not isinstance(item, dict):
+                    continue
+                role = item.get("role")
+                content = item.get("content")
+                if role in {"user", "assistant"} and isinstance(content, str):
+                    messages.append({"role": role, "content": content})
+        summary = value.get("summary", "")
+        return PrivateAIConversation(
+            active=bool(value.get("active", False)),
+            summary=summary if isinstance(summary, str) else "",
+            messages=messages,
+        )
+
+    def set_private_ai_conversation(
+        self,
+        user_id: str,
+        active: bool,
+        summary: str,
+        messages: list[dict[str, str]],
+    ) -> None:
+        """Persist one user's private AI session.
+
+        Args:
+            user_id: QQ platform user ID that owns the session.
+            active: Whether ordinary private messages should call AI.
+            summary: Compact memory of older conversation turns.
+            messages: Recent user and assistant turns to send verbatim.
+        """
+        self.set_cache(
+            "private_ai",
+            "user",
+            user_id,
+            "conversation",
+            {"active": active, "summary": summary, "messages": messages},
+        )
 
     def set_setting(self, key: str, value: Any) -> None:
         """Persist a plugin-wide JSON setting.
