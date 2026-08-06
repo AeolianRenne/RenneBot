@@ -68,8 +68,10 @@ Private AI requests use a fixed, non-overridable system safety prompt. The model
 is not given any tools or access to the server, Docker containers, filesystem,
 SQLite database, logs, runtime configuration, Git checkout, other user data, or
 AstrBot credentials. It must not claim to access, infer, or disclose them, and
-it must refuse requests for secrets, internal instructions, or dangerous server
-operations.
+it must refuse requests for secrets, internal instructions, dangerous server
+operations, or any information about the developer. Developer-related questions
+are blocked before they reach the model and are not stored in conversation
+context.
 
 Credential-like inputs (API keys, tokens, passwords, private keys, and common
 cloud access-key formats) are rejected before a private AI request is made and
