@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -16,6 +17,22 @@ class CommandKind(StrEnum):
     AI = "ai"
     HELP = "help"
     IDENTITY = "identity"
+
+
+def message_text_from_plain_components(
+    plain_texts: Iterable[str], fallback: str
+) -> str:
+    """Prefer text parsed from message components over a raw event string.
+
+    Args:
+        plain_texts: Text values from plain message components.
+        fallback: The event's raw text when no plain component is available.
+
+    Returns:
+        Normalized text suitable for command matching.
+    """
+    text = " ".join(item for item in plain_texts if item).strip()
+    return text or fallback.strip()
 
 
 @dataclass(frozen=True)

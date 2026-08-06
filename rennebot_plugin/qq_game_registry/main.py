@@ -6,7 +6,7 @@ import os
 
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star
-from astrbot.core.message.components import At
+from astrbot.core.message.components import At, Plain
 from astrbot.core.star.star_tools import StarTools
 
 from .ai_client import AIConfigurationError, AIRequestError, OpenAICompatibleClient
@@ -14,6 +14,7 @@ from .commands import (
     CommandError,
     CommandKind,
     ParsedCommand,
+    message_text_from_plain_components,
     parse_group_command,
     parse_runtime_config_command,
 )
@@ -64,13 +65,18 @@ class Main(Star):
         try:
             group_id = event.get_group_id()
             sender_id = event.get_sender_id()
-            message = event.message_str.strip()
+            messages = event.get_messages()
+            message = message_text_from_plain_components(
+                (
+                    component.text
+                    for component in messages
+                    if isinstance(component, Plain)
+                ),
+                event.message_str,
+            )
             if group_id:
-                messages = event.get_messages()
-                mentioned_bot = bool(
-                    messages
-                    and isinstance(messages[0], At)
-                    and str(messages[0].qq) == str(event.get_self_id())
+                mentioned_bot = any(
+                    isinstance(component, At) for component in messages
                 )
                 response = (
                     await self._handle_group_message(event, group_id, sender_id, message)

@@ -3,6 +3,7 @@ import pytest
 from rennebot_plugin.qq_game_registry.commands import (
     CommandError,
     CommandKind,
+    message_text_from_plain_components,
     parse_group_command,
     parse_runtime_config_command,
 )
@@ -57,3 +58,12 @@ def test_parses_runtime_configuration() -> None:
 
 def test_non_command_is_ignored() -> None:
     assert parse_group_command("大家晚上好") is None
+
+
+def test_prefers_plain_component_text_for_c2c_command() -> None:
+    message = message_text_from_plain_components(
+        ["/renne-id"],
+        "<@bot> /renne-id",
+    )
+
+    assert message == "/renne-id"
