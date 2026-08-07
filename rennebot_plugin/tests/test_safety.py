@@ -1,4 +1,4 @@
-from rennebot_plugin.qq_game_registry.scripts.safety import (
+from qq_game_registry.scripts.safety import (
     contains_sensitive_text,
     is_developer_privacy_request,
     redact_sensitive_text,

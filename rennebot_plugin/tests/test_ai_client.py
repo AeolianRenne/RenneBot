@@ -1,10 +1,7 @@
 import httpx
 import pytest
 
-from rennebot_plugin.qq_game_registry.ai_client import (
-    AIRequestError,
-    OpenAICompatibleClient,
-)
+from qq_game_registry.ai_client import AIRequestError, OpenAICompatibleClient
 
 
 @pytest.mark.asyncio

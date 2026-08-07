@@ -3,7 +3,7 @@ import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from rennebot_plugin.qq_game_registry.database import PluginDatabase
+from qq_game_registry.database import PluginDatabase
 
 
 def test_game_ids_are_isolated_by_group_and_upserted(tmp_path) -> None:
@@ -60,7 +60,7 @@ def test_plugin_settings_are_persisted(tmp_path) -> None:
 
 def test_external_database_tool_recovers_administrators(tmp_path) -> None:
     database_path = tmp_path / "rennebot.sqlite3"
-    script = Path(__file__).parents[2] / "scripts" / "rennebot-db.py"
+    script = Path(__file__).parents[1] / "tools" / "rennebot-db.py"
 
     result = subprocess.run(
         [

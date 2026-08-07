@@ -1,6 +1,6 @@
 import pytest
 
-from rennebot_plugin.qq_game_registry.commands import (
+from qq_game_registry.commands import (
     CommandError,
     CommandKind,
     message_text_from_plain_components,

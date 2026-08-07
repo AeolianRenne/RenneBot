@@ -12,9 +12,9 @@ Set-Location $projectRoot
 if (-not $SkipTests) {
     $venvPython = Join-Path $projectRoot ".venv\Scripts\python.exe"
     if (Test-Path -LiteralPath $venvPython) {
-        & $venvPython -m pytest --confcutdir=tests/rennebot tests/rennebot
+        & $venvPython -m pytest --confcutdir=rennebot_plugin/tests rennebot_plugin/tests
     } elseif (Get-Command uv -ErrorAction SilentlyContinue) {
-        uv run pytest --confcutdir=tests/rennebot tests/rennebot
+        uv run pytest --confcutdir=rennebot_plugin/tests rennebot_plugin/tests
     } else {
         throw "No .venv or uv was found. Create the development environment first."
     }

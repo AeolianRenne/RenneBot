@@ -49,8 +49,8 @@ existing `/AstrBot/data/plugins/qq_game_registry` data directory is retained.
 ```powershell
 cd C:\Users\ASUS\Documents\QQAgent\RenneBot\RenneBot
 uv sync
-uv run pytest tests/rennebot
-uv run ruff check rennebot_plugin tests/rennebot
+uv run pytest --confcutdir=rennebot_plugin/tests rennebot_plugin/tests
+uv run ruff check rennebot_plugin
 Copy-Item .env.rennebot.example .env.rennebot
 docker compose -f compose.rennebot.yml up -d --build
 ```

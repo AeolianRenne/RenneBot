@@ -11,7 +11,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-
 UTC = timezone.utc
 
 
@@ -196,10 +195,20 @@ class PluginDatabase:
                     expires_at = excluded.expires_at,
                     updated_at = excluded.updated_at
                 """,
-                (namespace, scope_type, scope_id, key, json.dumps(value), expiry, _now()),
+                (
+                    namespace,
+                    scope_type,
+                    scope_id,
+                    key,
+                    json.dumps(value),
+                    expiry,
+                    _now(),
+                ),
             )
 
-    def get_cache(self, namespace: str, scope_type: str, scope_id: str, key: str) -> Any | None:
+    def get_cache(
+        self, namespace: str, scope_type: str, scope_id: str, key: str
+    ) -> Any | None:
         """Read a cache value and remove it when it has expired.
 
         Args:
