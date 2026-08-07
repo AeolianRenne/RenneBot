@@ -8,7 +8,7 @@ if [[ $# -ne 1 ]]; then
 fi
 
 repo_url="$1"
-app_dir="/opt/rennebot/app"
+app_dir="${RENNEBOT_APP_DIR:-/home/admin/RenneBot}"
 runtime_dir="/opt/rennebot/runtime"
 
 if [[ -e "$app_dir" ]]; then

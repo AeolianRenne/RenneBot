@@ -78,7 +78,7 @@ ssh -T git@github.com
 
 ## 3. Clone and start the service
 
-Run the bootstrap script once. It clones the source to `/opt/rennebot/app`,
+Run the bootstrap script once. It clones the source to `/home/admin/RenneBot`,
 creates `/opt/rennebot/runtime`, and copies a server-only environment template.
 
 ```bash
@@ -112,7 +112,7 @@ PYTHON_BASE_IMAGE=m.daocloud.io/docker.io/library/python:3.12-slim
 Start the source build and container:
 
 ```bash
-cd /opt/rennebot/app
+cd /home/admin/RenneBot
 BOT_ENV_FILE=/opt/rennebot/runtime/bot.env RUNTIME_DIR=/opt/rennebot/runtime \
   docker compose --env-file /opt/rennebot/runtime/bot.env \
   -f compose.rennebot.yml up -d --build
@@ -137,7 +137,7 @@ Open `http://127.0.0.1:6185` in a browser. Retrieve the initial AstrBot password
 from server logs, sign in, and change it immediately:
 
 ```bash
-cd /opt/rennebot/app
+cd /home/admin/RenneBot
 BOT_ENV_FILE=/opt/rennebot/runtime/bot.env RUNTIME_DIR=/opt/rennebot/runtime \
   docker compose -f compose.rennebot.yml logs --tail 100
 ```
@@ -162,7 +162,7 @@ chat, send the bot `/renne-id` to receive your platform user ID. Then use this
 ID once to seed the SQLite administrator list:
 
 ```bash
-cd /opt/rennebot/app
+cd /home/admin/RenneBot
 RENNEBOT_BOOTSTRAP_ADMIN_IDS='<your-platform-user-id>' \
 BOT_ENV_FILE=/opt/rennebot/runtime/bot.env RUNTIME_DIR=/opt/rennebot/runtime \
   docker compose -f compose.rennebot.yml up -d --force-recreate
@@ -199,7 +199,7 @@ To recover from every administrator ID being removed, stop the container, create
 a backup, update SQLite locally on the server, and start it again:
 
 ```bash
-cd /opt/rennebot/app
+cd /home/admin/RenneBot
 database=/opt/rennebot/runtime/astrbot-data/plugin_data/qq_game_registry/rennebot.sqlite3
 
 BOT_ENV_FILE=/opt/rennebot/runtime/bot.env RUNTIME_DIR=/opt/rennebot/runtime \
@@ -228,7 +228,8 @@ $env:RENNEBOT_DEPLOY_HOST = "<deploy-user>@<server-public-ip>"
 ```
 
 The script runs plugin tests, pushes local `master`, fetches the exact commit on
-the server, backs up SQLite, rebuilds the source image, and restarts the service.
+the server, backs up SQLite, and recreates the service. Plugin-only changes are
+read from the mounted source checkout and do not rebuild the AstrBot image.
 To deploy an earlier commit already present in remote history:
 
 ```powershell
