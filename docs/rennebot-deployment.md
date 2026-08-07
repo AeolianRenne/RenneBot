@@ -25,15 +25,18 @@ currently declares compatibility with AstrBot 4.x; test any major-version update
 before production deployment.
 
 Clone the deployment repository with `git clone --recurse-submodules`. When
-updating a checkout, run `git pull --ff-only` followed by
-`git submodule update --init --recursive`. Keep the mount path unchanged so the
-existing `/AstrBot/data/plugins/qq_game_registry` data directory is retained.
+updating a checkout, run `git pull --ff-only`, `git submodule sync --recursive`,
+then `git submodule update --init --recursive`. Keep the mount path unchanged so
+the existing `/AstrBot/data/plugins/qq_game_registry` data directory is retained.
 
 For a plugin-only feature release, commit and push inside `rennebot_plugin`, then
 return to the deployment repository, stage the updated submodule pointer, commit,
-and push the deployment repository. GitHub deploy keys are single-repository
-credentials, so the server needs separate read-only keys and SSH host aliases for
-the deployment and plugin repositories.
+and push the deployment repository. The plugin is public but its submodule URL is
+still SSH, so verify `git ls-remote git@github.com:AeolianRenne/astrbot-plugin-rennebot.git`
+from the server before the first update. If its repository-scoped deploy key cannot
+read the submodule, use a single normal SSH key from a dedicated GitHub machine
+account with read access to the deployment repository; do not use a personal
+account key on the server.
 
 ## Local development
 

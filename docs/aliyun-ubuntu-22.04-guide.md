@@ -61,37 +61,34 @@ cat ~/.ssh/rennebot_deploy.pub
 ```
 
 Add this public key in GitHub under **Settings → Deploy keys** for
-`AeolianRenne/RenneBot`, with write access disabled. GitHub deploy keys cannot be
-reused across repositories, so create a second key for the plugin repository:
-
-```bash
-ssh-keygen -t ed25519 -f ~/.ssh/rennebot_plugin_deploy -C "rennebot-plugin-server"
-cat ~/.ssh/rennebot_plugin_deploy.pub
-```
-
-Add the second public key under **Settings → Deploy keys** for
-`AeolianRenne/astrbot-plugin-rennebot`, also without write access. Add both
-entries to `~/.ssh/config`:
+`AeolianRenne/RenneBot`, with write access disabled. The plugin repository is
+public and its Git submodule uses the normal GitHub SSH URL, so no plugin-specific
+SSH alias or second deploy key is configured here. Add this entry to
+`~/.ssh/config`:
 
 ```sshconfig
 Host github.com
-  IdentityFile ~/.ssh/rennebot_deploy
-  IdentitiesOnly yes
-
-Host github.com-rennebot-plugin
   HostName github.com
   User git
-  IdentityFile ~/.ssh/rennebot_plugin_deploy
+  IdentityFile ~/.ssh/rennebot_deploy
   IdentitiesOnly yes
 ```
 
-Then verify the connection:
+Then verify both the SSH identity and access to the public plugin repository:
 
 ```bash
 chmod 600 ~/.ssh/config
 ssh -T git@github.com
-ssh -T git@github.com-rennebot-plugin
+git ls-remote git@github.com:AeolianRenne/astrbot-plugin-rennebot.git
 ```
+
+If `git ls-remote` is denied, the server's current key is a repository-scoped
+deploy key and cannot read the plugin through SSH. Keep SSH-only deployment by
+using one normal SSH key from a dedicated GitHub machine account: grant that
+account read access to `AeolianRenne/RenneBot`, add its public key under that
+account's **SSH and GPG keys**, and point the `github.com` entry above to it.
+The public plugin repository then needs no separate credential. Do not add the
+server key to a personal GitHub account with broader access.
 
 ## 3. Clone and start the service
 
