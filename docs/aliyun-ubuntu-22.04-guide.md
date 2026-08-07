@@ -60,13 +60,28 @@ ssh-keygen -t ed25519 -f ~/.ssh/rennebot_deploy -C "rennebot-server"
 cat ~/.ssh/rennebot_deploy.pub
 ```
 
-Add this public key in GitHub under **Settings → Deploy keys** for both
-`AeolianRenne/RenneBot` and `AeolianRenne/astrbot-plugin-rennebot`. Leave write
-access disabled in both repositories. Add the following entry to `~/.ssh/config`:
+Add this public key in GitHub under **Settings → Deploy keys** for
+`AeolianRenne/RenneBot`, with write access disabled. GitHub deploy keys cannot be
+reused across repositories, so create a second key for the plugin repository:
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/rennebot_plugin_deploy -C "rennebot-plugin-server"
+cat ~/.ssh/rennebot_plugin_deploy.pub
+```
+
+Add the second public key under **Settings → Deploy keys** for
+`AeolianRenne/astrbot-plugin-rennebot`, also without write access. Add both
+entries to `~/.ssh/config`:
 
 ```sshconfig
 Host github.com
   IdentityFile ~/.ssh/rennebot_deploy
+  IdentitiesOnly yes
+
+Host github.com-rennebot-plugin
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/rennebot_plugin_deploy
   IdentitiesOnly yes
 ```
 
@@ -75,6 +90,7 @@ Then verify the connection:
 ```bash
 chmod 600 ~/.ssh/config
 ssh -T git@github.com
+ssh -T git@github.com-rennebot-plugin
 ```
 
 ## 3. Clone and start the service

@@ -27,7 +27,7 @@ chmod 0600 "$runtime_dir/bot.env"
 cat <<EOF
 Bootstrap complete.
 1. Edit $runtime_dir/bot.env with the OpenAI-compatible API only.
-2. Configure a read-only SSH deploy key for both the deployment and plugin repositories, then add this user to the docker group.
+2. Configure one read-only SSH deploy key for each repository, then add this user to the docker group.
 3. Start: cd $app_dir && BOT_ENV_FILE=$runtime_dir/bot.env RUNTIME_DIR=$runtime_dir docker compose -f compose.rennebot.yml up -d --build
 4. Tunnel the dashboard: ssh -L 6185:127.0.0.1:6185 <server>
 EOF

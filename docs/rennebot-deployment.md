@@ -31,8 +31,9 @@ existing `/AstrBot/data/plugins/qq_game_registry` data directory is retained.
 
 For a plugin-only feature release, commit and push inside `rennebot_plugin`, then
 return to the deployment repository, stage the updated submodule pointer, commit,
-and push the deployment repository. The server deploy key needs read-only access
-to both GitHub repositories.
+and push the deployment repository. GitHub deploy keys are single-repository
+credentials, so the server needs separate read-only keys and SSH host aliases for
+the deployment and plugin repositories.
 
 ## Local development
 
