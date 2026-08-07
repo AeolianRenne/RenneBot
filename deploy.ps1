@@ -73,6 +73,8 @@ if [ -f "$database" ]; then
 fi
 
 git -C "$app_dir" checkout --detach "$commit"
+git -C "$app_dir" submodule sync --recursive
+git -C "$app_dir" submodule update --init --recursive
 cd "$app_dir"
 BOT_ENV_FILE="$runtime_dir/bot.env" RUNTIME_DIR="$runtime_dir" docker compose --env-file "$runtime_dir/bot.env" -f compose.rennebot.yml up -d --force-recreate --remove-orphans
 BOT_ENV_FILE="$runtime_dir/bot.env" RUNTIME_DIR="$runtime_dir" docker compose -f compose.rennebot.yml ps

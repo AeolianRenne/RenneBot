@@ -60,8 +60,9 @@ ssh-keygen -t ed25519 -f ~/.ssh/rennebot_deploy -C "rennebot-server"
 cat ~/.ssh/rennebot_deploy.pub
 ```
 
-Add this public key in GitHub under the repository's **Settings → Deploy keys**.
-Leave write access disabled. Add the following entry to `~/.ssh/config`:
+Add this public key in GitHub under **Settings → Deploy keys** for both
+`AeolianRenne/RenneBot` and `AeolianRenne/astrbot-plugin-rennebot`. Leave write
+access disabled in both repositories. Add the following entry to `~/.ssh/config`:
 
 ```sshconfig
 Host github.com

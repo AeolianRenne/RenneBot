@@ -1,48 +1,38 @@
 # RenneBot deployment
 
-This repository currently contains an AstrBot source checkout and a self-contained
-RenneBot plugin project in `rennebot_plugin`. The plugin source is mounted
-read-only into AstrBot at runtime. Its SQLite database lives in AstrBot's
-persistent plugin data directory and is not part of Git.
+This repository contains an AstrBot source checkout and pins the self-contained
+RenneBot plugin project as the `rennebot_plugin` Git submodule. The plugin source
+is mounted read-only into AstrBot at runtime. Its SQLite database lives in
+AstrBot's persistent plugin data directory and is not part of Git.
 
 `rennebot_plugin/qq_game_registry/main.py` is deliberately only the AstrBot event
 adapter. Command syntax remains in `commands.py`; feature behavior lives in
 `scripts/group_registry.py`, `scripts/private_ai.py`, `scripts/runtime_config.py`,
-and `scripts/safety.py`. This directory is the boundary intended for extraction
-into a standalone Git submodule; do not add RenneBot behavior to AstrBot core.
+and `scripts/safety.py`. This submodule is the RenneBot behavior boundary; do not
+add RenneBot behavior to AstrBot core.
 
 ## Upstream strategy
 
 Keep this source fork only as a transition path. The supported long-term layout is
 one small deployment repository that pins an AstrBot image version or digest and
 includes `rennebot_plugin` as a Git submodule. The runtime volume remains the
-same, so SQLite and AstrBot WebUI configuration survive that migration.
+same, so SQLite and AstrBot WebUI configuration survive that future migration.
 
-Until the split is complete, configure the original AstrBot repository as an
-`upstream` remote and merge or rebase deliberately tested releases. Do not deploy
-an unreviewed `latest` image. The plugin metadata currently declares compatibility
-with AstrBot 4.x; test any major-version update before production deployment.
+While this deployment repository still tracks AstrBot source, configure the
+original AstrBot repository as an `upstream` remote and merge or rebase deliberately
+tested releases. Do not deploy an unreviewed `latest` image. The plugin metadata
+currently declares compatibility with AstrBot 4.x; test any major-version update
+before production deployment.
 
-To create the independent plugin repository after creating an empty GitHub or
-Gitee repository, extract the already self-contained `rennebot_plugin` history
-and then replace the directory with a submodule. This is a one-time local Git
-migration; back up the runtime SQLite database before deploying the resulting
-deployment commit.
-
-```powershell
-git subtree split --prefix=rennebot_plugin -b export/rennebot-plugin
-git push <plugin-repository-url> export/rennebot-plugin:main
-git rm -r rennebot_plugin
-git commit -m "chore: remove in-tree plugin source"
-git submodule add <plugin-repository-url> rennebot_plugin
-git commit -m "chore: add RenneBot plugin submodule"
-git push origin master
-```
-
-Clone the deployment repository thereafter with `git clone --recurse-submodules`
-and update a deployed checkout with `git pull --ff-only` followed by
+Clone the deployment repository with `git clone --recurse-submodules`. When
+updating a checkout, run `git pull --ff-only` followed by
 `git submodule update --init --recursive`. Keep the mount path unchanged so the
 existing `/AstrBot/data/plugins/qq_game_registry` data directory is retained.
+
+For a plugin-only feature release, commit and push inside `rennebot_plugin`, then
+return to the deployment repository, stage the updated submodule pointer, commit,
+and push the deployment repository. The server deploy key needs read-only access
+to both GitHub repositories.
 
 ## Local development
 
