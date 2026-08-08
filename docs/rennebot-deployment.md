@@ -117,11 +117,20 @@ resolves each destination before connecting, and limits redirects, total request
 time, decompressed response bytes, and extracted text. This prevents the feature
 from being used to query local Docker services, the cloud metadata service, or
 arbitrary files. Tune `AI_RESEARCH_TIMEOUT_SECONDS=20`,
-`AI_RESEARCH_MAX_SOURCES=5`, the user-scoped
-`AI_RESEARCH_CACHE_TTL_SECONDS=900`, `AI_RESEARCH_EXTRACT_TIMEOUT_SECONDS=12`,
-`AI_RESEARCH_EXTRACT_MAX_BYTES=1048576`, and
-`AI_RESEARCH_EXTRACT_MAX_CHARS=6000` there. Never place search keys in Git or
+`AI_RESEARCH_MAX_SOURCES=6`, `AI_RESEARCH_MAX_QUERIES=6`, the user-scoped
+`AI_RESEARCH_CACHE_TTL_SECONDS=900`, `AI_RESEARCH_TASK_TIMEOUT_SECONDS=90`,
+`AI_RESEARCH_EXTRACT_TIMEOUT_SECONDS=12`, `AI_RESEARCH_EXTRACT_MAX_BYTES=1048576`,
+and `AI_RESEARCH_EXTRACT_MAX_CHARS=6000` there. Never place search keys in Git or
 SQLite.
+
+When a task names supported providers (DeepSeek, Qwen/通义千问, Kimi/Moonshot,
+MiniMax, or GLM/智谱), the plugin adds an official-domain-focused API query for
+each provider before one broad query. Searches and page extraction run in parallel,
+then sources are deduplicated and capped by `AI_RESEARCH_MAX_SOURCES`. For a
+comparison covering all five, use `AI_RESEARCH_MAX_SOURCES=6` and
+`AI_RESEARCH_MAX_QUERIES=6`. `AI_RESEARCH_TASK_TIMEOUT_SECONDS=90` is the hard
+budget for the entire task; a timeout returns a Chinese status message and does not
+ask the model to infer a conclusion from incomplete evidence.
 
 ### Private AI safety boundary
 
