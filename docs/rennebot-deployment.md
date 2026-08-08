@@ -118,24 +118,33 @@ resolves each destination before connecting, and limits redirects, total request
 time, decompressed response bytes, and extracted text. This prevents the feature
 from being used to query local Docker services, the cloud metadata service, or
 arbitrary files. Tune `AI_RESEARCH_TIMEOUT_SECONDS=20`,
-`AI_RESEARCH_MAX_SOURCES=6`, `AI_RESEARCH_MAX_QUERIES=6`, and the total logical
-operation limit `AI_RESEARCH_MAX_REQUESTS=12`, the user-scoped
+`AI_RESEARCH_MAX_SOURCES=6`, `AI_RESEARCH_MAX_QUERIES=6`, the total logical
+operation limit `AI_RESEARCH_MAX_REQUESTS=12`, `AI_RESEARCH_MAX_ROUNDS=2`, and the
+user-scoped
 `AI_RESEARCH_CACHE_TTL_SECONDS=900`, `AI_RESEARCH_TASK_TIMEOUT_SECONDS=90`,
 `AI_RESEARCH_EXTRACT_TIMEOUT_SECONDS=12`, `AI_RESEARCH_EXTRACT_MAX_BYTES=1048576`,
 and `AI_RESEARCH_EXTRACT_MAX_CHARS=6000` there. Never place search keys in Git or
 SQLite.
 
-When a task names supported providers (DeepSeek, Qwen/通义千问, Kimi/Moonshot,
-MiniMax, or GLM/智谱), the plugin adds an official-domain-focused API query for
-each provider before one broad query. Searches and page extraction run in parallel,
-then sources are deduplicated and capped by `AI_RESEARCH_MAX_SOURCES`. Each Tavily
-query and each public-page extraction consumes one operation from
-`AI_RESEARCH_MAX_REQUESTS`; cached results do not initiate a network request. For a
-comparison covering all five, use `AI_RESEARCH_MAX_SOURCES=6` and
-`AI_RESEARCH_MAX_QUERIES=6`, and `AI_RESEARCH_MAX_REQUESTS=12`. The recommended
+Research is staged rather than tied to any one task type. The first round uses the
+task objective (and official-domain queries for named providers such as DeepSeek,
+Qwen/通义千问, Kimi/Moonshot, MiniMax, or GLM/智谱). When capacity remains, a second
+round asks the model to return JSON-only plain-text queries that fill gaps revealed
+by the first-round evidence. The model cannot request URLs or make network calls;
+every follow-up still goes only to Tavily and every returned URL must pass the same
+public-web safety checks. Searches and page extraction run in parallel once their
+stage is planned, then sources are deduplicated and capped by
+`AI_RESEARCH_MAX_SOURCES`. Each Tavily query and each public-page extraction consumes
+one operation from `AI_RESEARCH_MAX_REQUESTS`; cached results do not initiate a
+network request. Set `AI_RESEARCH_MAX_ROUNDS=1` to disable the follow-up round, or
+use `AI_RESEARCH_MAX_ROUNDS=2` for broad, multi-topic research; higher values are
+currently capped at two rounds. Use
+`AI_RESEARCH_MAX_SOURCES=6`, `AI_RESEARCH_MAX_QUERIES=6`, and
+`AI_RESEARCH_MAX_REQUESTS=12`. The recommended
 `AI_RESEARCH_TASK_TIMEOUT_SECONDS=90` is a hard budget for each task turn, covering
-search, extraction, and the final model call; a timeout returns a Chinese status
-message and does not ask the model to infer a conclusion from incomplete evidence.
+planning, search, extraction, and the final model call; a timeout returns a Chinese
+status message and does not ask the model to infer a conclusion from incomplete
+evidence.
 
 ### Private AI safety boundary
 
