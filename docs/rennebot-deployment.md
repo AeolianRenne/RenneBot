@@ -101,12 +101,25 @@ most recent messages are retained. Configure the defaults outside Git with
 `AI_PRIVATE_MESSAGE_MAX_CHARS=8000` is rejected before it is sent to the model
 or written to SQLite. Group `/ai` requests remain one-shot.
 
-Research tasks currently use Tavily through `TAVILY_API_KEY` in the server-only
-`bot.env`. Without that key, a task is created but no outbound search or model
-request is made; the user receives a configuration message instead. Tune
-`AI_RESEARCH_TIMEOUT_SECONDS=20`, `AI_RESEARCH_MAX_SOURCES=5`, and the
-user-scoped `AI_RESEARCH_CACHE_TTL_SECONDS=900` there. Never place search keys
-in Git or SQLite.
+Research tasks use Tavily through `TAVILY_API_KEY` in the server-only `bot.env`.
+For every filtered result, RenneBot also attempts to extract visible text from the
+corresponding **public HTML** page; successful citations identify it as `公开网页正文`.
+If a page is unavailable, has a login or payment wall, is non-HTML, or exceeds a
+limit, the task retains Tavily's `搜索摘要` instead. It never stores account
+credentials or cookies, sends authorization headers, uses an environment proxy,
+or bypasses access controls.
+
+Public-page extraction permits only HTTP(S) on ports 80/443, rejects credentialed
+URLs, local hostnames and direct private/reserved IPs, validates every redirect,
+resolves each destination before connecting, and limits redirects, total request
+time, decompressed response bytes, and extracted text. This prevents the feature
+from being used to query local Docker services, the cloud metadata service, or
+arbitrary files. Tune `AI_RESEARCH_TIMEOUT_SECONDS=20`,
+`AI_RESEARCH_MAX_SOURCES=5`, the user-scoped
+`AI_RESEARCH_CACHE_TTL_SECONDS=900`, `AI_RESEARCH_EXTRACT_TIMEOUT_SECONDS=12`,
+`AI_RESEARCH_EXTRACT_MAX_BYTES=1048576`, and
+`AI_RESEARCH_EXTRACT_MAX_CHARS=6000` there. Never place search keys in Git or
+SQLite.
 
 ### Private AI safety boundary
 
