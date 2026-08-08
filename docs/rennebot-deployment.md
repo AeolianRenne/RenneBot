@@ -64,7 +64,7 @@ The plugin intercepts QQ Official messages before AstrBot's normal LLM flow.
   ordinary private messages then retain context. `清理上下文` clears memory
   while keeping the conversation active, and `结束对话` returns the chat to
   its silent state.
-- An authorized private user can instead send `开始联网任务：<目标>` from the
+- An authorized private user can instead send `开始任务：<目标>` from the
   inactive state. A research task is mutually exclusive with an ordinary
   conversation: end a conversation before starting a task, and send
   `结束当前任务` before starting a new conversation. During the task, ordinary
