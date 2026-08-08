@@ -64,6 +64,12 @@ The plugin intercepts QQ Official messages before AstrBot's normal LLM flow.
   ordinary private messages then retain context. `清理上下文` clears memory
   while keeping the conversation active, and `结束对话` returns the chat to
   its silent state.
+- An authorized private user can instead send `开始联网任务：<目标>` from the
+  inactive state. A research task is mutually exclusive with an ordinary
+  conversation: end a conversation before starting a task, and send
+  `结束当前任务` before starting a new conversation. During the task, ordinary
+  messages use bounded public-web search and return source links. Group behavior
+  remains unchanged.
 - A group request must be `@机器人 /ai <问题>` and its group ID must be stored
   in the SQLite runtime configuration.
 - All groups where the bot is present can use the non-AI commands below:
@@ -94,6 +100,13 @@ most recent messages are retained. Configure the defaults outside Git with
 `AI_PRIVATE_CONTEXT_RECENT_MESSAGES=24`. A private message longer than
 `AI_PRIVATE_MESSAGE_MAX_CHARS=8000` is rejected before it is sent to the model
 or written to SQLite. Group `/ai` requests remain one-shot.
+
+Research tasks currently use Tavily through `TAVILY_API_KEY` in the server-only
+`bot.env`. Without that key, a task is created but no outbound search or model
+request is made; the user receives a configuration message instead. Tune
+`AI_RESEARCH_TIMEOUT_SECONDS=20`, `AI_RESEARCH_MAX_SOURCES=5`, and the
+user-scoped `AI_RESEARCH_CACHE_TTL_SECONDS=900` there. Never place search keys
+in Git or SQLite.
 
 ### Private AI safety boundary
 
