@@ -69,7 +69,8 @@ The plugin intercepts QQ Official messages before AstrBot's normal LLM flow.
   that public-source retrieval has started, then sends the final result separately.
   A research task is mutually exclusive with an ordinary
   conversation: end a conversation before starting a task, and send
-  `结束当前任务` before starting a new conversation. During the task, ordinary
+  `结束当前任务` (or the compatible `结束任务`) before starting a new conversation.
+  The bot confirms in Chinese when the task has ended. During the task, ordinary
   messages use bounded public-web search and return source links. Group behavior
   remains unchanged.
 - A group request must be `@机器人 /ai <问题>` and its group ID must be stored
@@ -117,7 +118,8 @@ resolves each destination before connecting, and limits redirects, total request
 time, decompressed response bytes, and extracted text. This prevents the feature
 from being used to query local Docker services, the cloud metadata service, or
 arbitrary files. Tune `AI_RESEARCH_TIMEOUT_SECONDS=20`,
-`AI_RESEARCH_MAX_SOURCES=6`, `AI_RESEARCH_MAX_QUERIES=6`, the user-scoped
+`AI_RESEARCH_MAX_SOURCES=6`, `AI_RESEARCH_MAX_QUERIES=6`, and the total logical
+operation limit `AI_RESEARCH_MAX_REQUESTS=12`, the user-scoped
 `AI_RESEARCH_CACHE_TTL_SECONDS=900`, `AI_RESEARCH_TASK_TIMEOUT_SECONDS=90`,
 `AI_RESEARCH_EXTRACT_TIMEOUT_SECONDS=12`, `AI_RESEARCH_EXTRACT_MAX_BYTES=1048576`,
 and `AI_RESEARCH_EXTRACT_MAX_CHARS=6000` there. Never place search keys in Git or
@@ -126,11 +128,14 @@ SQLite.
 When a task names supported providers (DeepSeek, Qwen/通义千问, Kimi/Moonshot,
 MiniMax, or GLM/智谱), the plugin adds an official-domain-focused API query for
 each provider before one broad query. Searches and page extraction run in parallel,
-then sources are deduplicated and capped by `AI_RESEARCH_MAX_SOURCES`. For a
+then sources are deduplicated and capped by `AI_RESEARCH_MAX_SOURCES`. Each Tavily
+query and each public-page extraction consumes one operation from
+`AI_RESEARCH_MAX_REQUESTS`; cached results do not initiate a network request. For a
 comparison covering all five, use `AI_RESEARCH_MAX_SOURCES=6` and
-`AI_RESEARCH_MAX_QUERIES=6`. `AI_RESEARCH_TASK_TIMEOUT_SECONDS=90` is the hard
-budget for the entire task; a timeout returns a Chinese status message and does not
-ask the model to infer a conclusion from incomplete evidence.
+`AI_RESEARCH_MAX_QUERIES=6`, and `AI_RESEARCH_MAX_REQUESTS=12`. The recommended
+`AI_RESEARCH_TASK_TIMEOUT_SECONDS=90` is a hard budget for each task turn, covering
+search, extraction, and the final model call; a timeout returns a Chinese status
+message and does not ask the model to infer a conclusion from incomplete evidence.
 
 ### Private AI safety boundary
 
