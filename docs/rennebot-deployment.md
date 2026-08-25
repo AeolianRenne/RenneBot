@@ -91,6 +91,11 @@ self-reply loops.
 The plugin intercepts QQ Official Bot and OneBot v11 messages before AstrBot's
 normal LLM flow. Command behavior is the same across both adapters.
 
+- **Every group response is disabled by default.** A group must be listed in
+  `enabled_group_ids` before the bot responds to any mention, including game-ID,
+  BP, `/renne-id`, help, or `/ai`. This prevents a connected personal QQ account
+  from responding in unrelated existing groups. The AI group allowlist below is a
+  separate second gate.
 - A private AI conversation is available only when its sender ID is stored in
   the SQLite runtime configuration. The user sends `开启新对话` to enable it;
   ordinary private messages then retain context. `清理上下文` clears memory
@@ -129,10 +134,17 @@ manages all allowlists with:
 
 ```text
 /renne-config show
+/renne-config groups set <group-id,group-id>
 /renne-config ai-users set <id,id>
 /renne-config ai-groups set <id,id>
 /renne-config admins set <id,id>
 ```
+
+Before deploying this change, record the ID of every currently authorized QQ
+Official Bot group with `@机器人 /renne-id`, then add those IDs using
+`/renne-config groups set ...`. For the OneBot personal account, the group ID is
+normally the numeric QQ group number. The `groups set` command replaces the whole
+list, so always include every group that should remain enabled.
 
 Private conversation state is stored in SQLite cache namespace `private_ai`.
 When its character budget is exceeded, older messages are summarized and the
