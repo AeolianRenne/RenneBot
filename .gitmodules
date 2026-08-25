@@ -1,3 +1,6 @@
 [submodule "rennebot_plugin"]
 	path = rennebot_plugin
 	url = git@github.com:AeolianRenne/astrbot-plugin-rennebot.git
+[submodule "lol-banpick"]
+	path = lol-banpick
+	url = git@github.com:AeolianRenne/LeagueOfLegendsGlobalBanPickWebsite.git

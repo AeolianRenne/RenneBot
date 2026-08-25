@@ -14,6 +14,8 @@ services:
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       RENNEBOT_BOOTSTRAP_ADMIN_IDS: ${RENNEBOT_BOOTSTRAP_ADMIN_IDS:-}
+      BANPICK_INTERNAL_URL: ${BANPICK_INTERNAL_URL:-http://banpick:8000}
+      BANPICK_BOT_API_KEY: ${BANPICK_BOT_API_KEY:-}
     ports:
       # Dashboard and callback API remain accessible only over an SSH tunnel.
       - "127.0.0.1:6185:6185"
@@ -21,6 +23,30 @@ services:
     volumes:
       - ${RUNTIME_DIR:-./runtime}/astrbot-data:/AstrBot/data
       - ./rennebot_plugin/qq_game_registry:/AstrBot/data/plugins/qq_game_registry:ro
+  banpick:
+    build: ./lol-banpick
+    container_name: rennebot-banpick
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - ${BOT_ENV_FILE:-.env.rennebot}
+    environment:
+      BANPICK_DATA_DIR: /data
+      BANPICK_INTERNAL_URL: ${BANPICK_INTERNAL_URL:-http://banpick:8000}
+      BANPICK_PUBLIC_BASE_URL: ${BANPICK_PUBLIC_BASE_URL:-http://localhost:8000}
+      BANPICK_ADMIN_INITIAL_PASSWORD: ${BANPICK_ADMIN_INITIAL_PASSWORD:-change-me}
+      BANPICK_BOT_API_KEY: ${BANPICK_BOT_API_KEY:-change-me}
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ${RUNTIME_DIR:-./runtime}/banpick-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import socket; socket.create_connection(('127.0.0.1', 6185), 2).close()\""]
       interval: 30s
