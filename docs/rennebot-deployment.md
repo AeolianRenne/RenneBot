@@ -55,9 +55,41 @@ change the generated AstrBot password, and create a **QQ Official Bot
 persists that configuration in `runtime/astrbot-data`. Keep AstrBot's default LLM
 chat disabled because RenneBot handles the allowed AI calls itself.
 
+## Optional QQ personal-account adapter
+
+RenneBot supports its existing **QQ Official Bot (WebSocket)** adapter and an
+additional **OneBot v11** adapter at the same time. The latter is intended for a
+dedicated QQ personal account connected through a compatible protocol client such
+as NapCat. It is not a QQ Official Bot API; expect possible platform risk, account
+login challenges, and compatibility changes. Do not use a primary personal QQ
+account or expose a protocol client's management UI publicly.
+
+Create the OneBot adapter in AstrBot WebUI under **机器人** → **创建机器人** →
+**OneBot v11**. Enable it, set the reverse WebSocket host to `0.0.0.0`, keep port
+`6199`, and set a long random reverse-WebSocket token. Configure the same token in
+the protocol client. This Compose deployment publishes port 6199 only on host
+loopback, so a protocol client installed directly on the server uses:
+
+```text
+ws://127.0.0.1:6199/ws
+```
+
+When the protocol client runs in Docker instead, attach it to AstrBot's Compose
+network and use the AstrBot service hostname:
+
+```text
+ws://astrbot:6199/ws
+```
+
+Never add a security-group rule for port 6199. Verify the connection in AstrBot
+WebUI **平台日志**: `aiocqhttp(OneBot v11) 适配器已连接。` indicates success.
+The plugin ignores OneBot events sent by the connected QQ account itself, avoiding
+self-reply loops.
+
 ## QQ behavior
 
-The plugin intercepts QQ Official messages before AstrBot's normal LLM flow.
+The plugin intercepts QQ Official Bot and OneBot v11 messages before AstrBot's
+normal LLM flow. Command behavior is the same across both adapters.
 
 - A private AI conversation is available only when its sender ID is stored in
   the SQLite runtime configuration. The user sends `开启新对话` to enable it;
@@ -84,6 +116,12 @@ The plugin intercepts QQ Official messages before AstrBot's normal LLM flow.
 
 Use `/renne-id` to obtain platform IDs: send it in a private chat to see your
 user ID, or send `@机器人 /renne-id` in a group to see the group and sender IDs.
+The OneBot personal-account adapter normally returns numeric QQ IDs; the QQ Official
+Bot adapter can return a different platform ID format. Add the correct ID for each
+adapter to the same SQLite settings. For example, retain your existing administrator
+ID and add the personal-account QQ ID with `/renne-config admins set
+<official-id>,<personal-qq-id>`; use the analogous `ai-users` and `ai-groups`
+commands for private-AI users and group AI authorization.
 On the first startup only, set `RENNEBOT_BOOTSTRAP_ADMIN_IDS` as a one-time
 runtime environment variable. It initializes the SQLite administrator list;
 then recreate the service without that variable. An administrator privately
